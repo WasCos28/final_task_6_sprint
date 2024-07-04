@@ -41,18 +41,25 @@ var tasks = map[string]Task{
 }
 
 // Ниже напишите обработчики для каждого эндпоинта
-func getTasks(w http.ResponseWriter, r *http.Request) {
+func getTasks(w http.ResponseWriter, r http.Request) {
 	resp, err := json.Marshal(tasks)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	// в заголовок записываем тип контента, у нас это данные в формате JSON
 	w.Header().Set("Content-Type", "application/json")
+
 	// так как все успешно, то статус OK
 	w.WriteHeader(http.StatusOK)
+
 	// записываем сериализованные в JSON данные в тело ответа
-	w.Write(resp)
+	_, err = w.Write(resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func addTask(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +83,7 @@ func addTask(w http.ResponseWriter, r *http.Request) {
 	}
 	_, exists := tasks[task.ID]
 	if exists {
-		http.Error(w, "Задача с таким ID уже существует", http.StatusConflict)
+		http.Error(w, "Задача с таким ID уже существует", http.StatusBadRequest)
 		return
 	}
 
@@ -94,7 +101,7 @@ func getTask(w http.ResponseWriter, r *http.Request) {
 
 	task, ok := tasks[id]
 	if !ok {
-		http.Error(w, "Задача не найдена", http.StatusNotFound)
+		http.Error(w, "Задача не найдена", http.StatusBadRequest)
 		return
 	}
 
@@ -113,7 +120,7 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	_, ok := tasks[id]
 	if !ok {
-		http.Error(w, "Задача не найдена", http.StatusNotFound)
+		http.Error(w, "Задача не найдена", http.StatusBadRequest)
 		return
 	}
 
